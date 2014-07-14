@@ -62,7 +62,7 @@ foreach my $link_uri (@links) {
 	foreach my $svg_uri (@svg) {
 		$dt->insert({
 			'Part' => $part_num,
-			'SVG link' => $svg_uri->as_string,
+			'SVG_link' => $svg_uri->as_string,
 		});
 	}
 }
