@@ -9,10 +9,14 @@ use warnings;
 use Database::DumpTruck;
 use Digest::MD5;
 use Encode qw(decode_utf8);
+use English;
 use File::Temp qw(tempfile);
 use HTML::TreeBuilder;
 use LWP::UserAgent;
 use URI;
+
+# Don't buffer.
+$OUTPUT_AUTOFLUSH = 1;
 
 # URI of service.
 my $base_uri = URI->new('http://medical.nema.org/medical/dicom/2014a/source/docbook/');
@@ -29,6 +33,7 @@ my $ua = LWP::UserAgent->new(
 );
 
 # Get base root.
+print 'Page: '.$base_uri->as_string."\n";
 my @links = get_links($base_uri, sub {
 	my $uri = shift;
 	if ($uri =~ m/part\d+/ms) {
@@ -62,6 +67,7 @@ foreach my $link_uri (@links) {
 
 	# Insert.
 	foreach my $svg_uri (@svg) {
+		print "Part $part_num - ".$svg_uri->as_string."\n";
 		my $md5 = md5($svg_uri->as_string);
 		$dt->insert({
 			'Part' => $part_num,
