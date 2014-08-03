@@ -7,7 +7,9 @@ use warnings;
 
 # Modules.
 use Database::DumpTruck;
+use Digest::MD5;
 use Encode qw(decode_utf8);
+use File::Temp qw(tempfile);
 use HTML::TreeBuilder;
 use LWP::UserAgent;
 use URI;
@@ -60,10 +62,14 @@ foreach my $link_uri (@links) {
 
 	# Insert.
 	foreach my $svg_uri (@svg) {
+		my $md5 = md5($svg_uri->as_string);
 		$dt->insert({
 			'Part' => $part_num,
 			'SVG_link' => $svg_uri->as_string,
+			'MD5' => $md5,
 		});
+		# TODO Move to begin with create_table().
+		$dt->create_index(['MD5'], 'data', 1, 0);
 	}
 }
 
@@ -100,4 +106,21 @@ sub get_links {
 		}
 	}
 	return @links;
+}
+
+# Get link and compute MD5 sum.
+sub md5 {
+	my $link = shift;
+	my (undef, $temp_file) = tempfile();
+	my $get = $ua->get($link, ':content_file' => $temp_file);
+	my $md5_sum;
+	if ($get->is_success) {
+		my $md5 = Digest::MD5->new;
+		open my $temp_fh, '<', $temp_file;
+		$md5->addfile($temp_fh);
+		$md5_sum = $md5->hexdigest;
+		close $temp_fh;
+		unlink $temp_file;
+	}
+	return $md5_sum;
 }
