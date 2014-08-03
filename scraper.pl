@@ -67,15 +67,26 @@ foreach my $link_uri (@links) {
 
 	# Insert.
 	foreach my $svg_uri (@svg) {
-		print "Part $part_num - ".$svg_uri->as_string."\n";
-		my $md5 = md5($svg_uri->as_string);
-		$dt->insert({
-			'Part' => $part_num,
-			'SVG_link' => $svg_uri->as_string,
-			'MD5' => $md5,
-		});
-		# TODO Move to begin with create_table().
-		$dt->create_index(['MD5'], 'data', 1, 0);
+		my $svg_link = $svg_uri->as_string;
+		my $ret_ar = eval {
+			$dt->execute('SELECT COUNT(*) FROM data '.
+				'WHERE SVG_link = ?', $svg_link);
+		};
+		if ($EVAL_ERROR || ! @{$ret_ar}
+			|| ! exists $ret_ar->[0]->{'count(*)'}
+			|| ! defined $ret_ar->[0]->{'count(*)'}
+			|| $ret_ar->[0]->{'count(*)'} == 0) {
+
+			print "Part $part_num - ".$svg_link."\n";
+			my $md5 = md5($svg_link);
+			$dt->insert({
+				'Part' => $part_num,
+				'SVG_link' => $svg_link,
+				'MD5' => $md5,
+			});
+			# TODO Move to begin with create_table().
+			$dt->create_index(['MD5'], 'data', 1, 0);
+		}
 	}
 }
 
